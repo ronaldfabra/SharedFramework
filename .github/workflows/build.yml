@@ -1,0 +1,129 @@
+name: iOS CI Pipeline
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: read
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: master
+
+      - name: List available Xcode versions
+        run: ls /Applications | grep Xcode
+
+      - name: Set up Xcode version
+        run: sudo xcode-select -s /Applications/Xcode_16.1.0.app/Contents/Developer
+
+      - name: Show current version of Xcode
+        run: xcodebuild -version
+
+      - name: Fetch latest changes
+        run: |
+          git fetch --prune --unshallow
+          git checkout master
+          git pull origin master   
+
+      - name: Install GitHub CLI
+        run: |
+          brew install gh
+
+      #- name: Build Instaflix
+      #  run: |
+      #    SOURCE_PATH="shared/example.framework"
+      #    XCFRAMEWORK_NAME="Instaflix"
+      #    OUTPUT_DIR="output"
+      #    XCFRAMEWORK_PATH="$OUTPUT_DIR/$XCFRAMEWORK_NAME.xcframework"
+      #    mkdir -p "$OUTPUT_DIR"
+      #    rm -rf "$XCFRAMEWORK_PATH"
+      #    xcodebuild -create-xcframework -framework "$SOURCE_PATH" -output "$XCFRAMEWORK_PATH"
+
+      #- name: Check if XCFramework creation was successful
+      #  id: check_xcframework
+      #  run: |
+      #    if [ -f $XCFRAMEWORK_PATH ]; then
+      #      echo "success=true" >> $GITHUB_ENV
+      #    else
+      #      echo "success=false" >> $GITHUB_ENV
+      #      exit 1
+      #    fi
+
+      - name: Compress XCFramework into ZIP
+        run: |
+          ZIP_NAME="SharedData.xcframework.zip"
+          cd Shared
+          zip -r "$ZIP_NAME" SharedData.xcframework
+          ls -l "$ZIP_NAME"
+
+      - name: Get the last tag
+        id: get_tag
+        run: |
+          latest_tag=$(git describe --tags --abbrev=0 || echo "v0.0.0")
+          echo "latest_tag=$latest_tag" >> $GITHUB_ENV
+
+      - name: Increase the last version number
+        id: increment_tag
+        run: |
+          latest_tag="${{ env.latest_tag }}"
+          if [ -z "$latest_tag" ]; then
+              new_tag="v1.0.0"
+          else
+              regex="v([0-9]+)\.([0-9]+)\.([0-9]+)"
+              if [[ $latest_tag =~ $regex ]]; then
+                  major="${BASH_REMATCH[1]}"
+                  minor="${BASH_REMATCH[2]}"
+                  patch="${BASH_REMATCH[3]}"
+                  major=$((major + 1))
+                  new_tag="v$major.$minor.$patch"
+              else
+                  exit 1
+              fi
+          fi
+          echo "new_tag=$new_tag" >> $GITHUB_ENV
+
+      - name: Upload the XCFramework ZIP to the repository
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+          # Create the folder "Sources" if not exist
+          mkdir -p Sources
+          
+          # Move the file ZIP to de Source folder
+          mv Shared/SharedData.xcframework.zip Sources/
+
+          # Make the commit and push the folder with the new SharedData XCFramework
+          git add Sources/SharedData.xcframework.zip
+          git commit -m "Add new version of SharedData (${{ env.new_tag }})"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create and push the new tag
+        run: |
+          new_tag="${{ env.new_tag }}"
+          git tag "$new_tag" -m "Release Instaflix $new_tag"
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} $new_tag
+
+      - name: Create GitHub Release
+        run: |
+          new_tag="${{ env.new_tag }}"
+          gh release create $new_tag --title "SharedData Release" --notes "version $new_tag of #SharedData"
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
