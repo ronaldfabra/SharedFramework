@@ -139,10 +139,3 @@ jobs:
           git tag "$new_tag" -m "Release Instaflix $new_tag"
           git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} $new_tag
 
-      - name: Create GitHub Release
-        run: |
-          new_tag="${{ env.new_tag }}"
-          gh release create $new_tag --title "SharedData Release" --notes "version $new_tag of #SharedData"
-        env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
