@@ -4,7 +4,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "Instaflix",
+    name: "SharedFramework",
     platforms: [.iOS(.v16)],
     products: [
         .library(
