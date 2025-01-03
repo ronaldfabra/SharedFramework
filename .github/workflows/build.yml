@@ -96,6 +96,18 @@ jobs:
           fi
           echo "new_tag=$new_tag" >> $GITHUB_ENV
 
+      - name: Check if tag exists
+        id: check_tag
+        run: |
+          tag_exists=$(git tag -l "$new_tag")
+          if [ -n "$tag_exists" ]; then
+              echo "Tag $new_tag already exists. Incrementing..."
+              # Incrementa la versión minor si la etiqueta ya existe
+              major=$((major + 1))
+              new_tag="v$major.$minor.$patch"
+          fi
+          echo "new_tag=$new_tag" >> $GITHUB_ENV
+
       - name: Upload the XCFramework ZIP to the repository
         run: |
           git config --global user.name "GitHub Actions"
@@ -113,6 +125,10 @@ jobs:
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete local tag if exists
+        run: |
+          git tag -d "$new_tag" || echo "No local tag to delete"
 
       - name: Create and push the new tag
         run: |
