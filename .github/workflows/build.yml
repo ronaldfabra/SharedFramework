@@ -66,7 +66,7 @@ jobs:
       - name: Compress XCFramework into ZIP
         run: |
           ZIP_NAME="SharedData.xcframework.zip"
-          cd Shared
+          cd SharedFrameworkLibrary/Shared
           zip -r "$ZIP_NAME" SharedData.xcframework
           ls -l "$ZIP_NAME"
 
@@ -105,7 +105,7 @@ jobs:
           mkdir -p Sources
           
           # Move the file ZIP to de Source folder
-          mv Shared/SharedData.xcframework.zip Sources/
+          mv SharedFrameworkLibrary/Shared/SharedData.xcframework.zip Sources/
 
           # Make the commit and push the folder with the new SharedData XCFramework
           git add Sources/SharedData.xcframework.zip
