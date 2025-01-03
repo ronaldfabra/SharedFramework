@@ -63,13 +63,13 @@ jobs:
       #      exit 1
       #    fi
 
-      - name: Compress XCFramework into ZIP
-        run: |
-          ZIP_NAME="SharedData.xcframework.zip"
-          cd Shared
-          zip -r "$ZIP_NAME" SharedData.xcframework
-          ls -l "$ZIP_NAME"
-          
+      #- name: Compress XCFramework into ZIP
+      #  run: |
+      #    ZIP_NAME="SharedData.xcframework.zip"
+      #    cd Shared
+      #    zip -r "$ZIP_NAME" SharedData.xcframework
+      #    ls -l "$ZIP_NAME"
+
       - name: Fetch all tags
         run: git fetch --tags
 
@@ -111,23 +111,23 @@ jobs:
           fi
           echo "new_tag=$new_tag" >> $GITHUB_ENV
 
-      - name: Upload the XCFramework ZIP to the repository
-        run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-
-          # Create the folder "Sources" if not exist
-          mkdir -p Sources
-          
-          # Move the file ZIP to de Source folder
-          mv Shared/SharedData.xcframework.zip Sources/
-
-          # Make the commit and push the folder with the new SharedData XCFramework
-          git add Sources/SharedData.xcframework.zip
-          git commit -m "Add new version of SharedData (${{ env.new_tag }})"
-          git push
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #- name: Upload the XCFramework ZIP to the repository
+      #  run: |
+      #    git config --global user.name "GitHub Actions"
+      #    git config --global user.email "actions@github.com"
+#
+      #    # Create the folder "Sources" if not exist
+      #    mkdir -p Sources
+      #
+      #    # Move the file ZIP to de Source folder
+      #    mv Shared/SharedData.xcframework.zip Sources/
+#
+      #    # Make the commit and push the folder with the new SharedData XCFramework
+      #    git add Sources/SharedData.xcframework.zip
+      #    git commit -m "Add new version of SharedData (${{ env.new_tag }})"
+      #    git push
+      #  env:
+      #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Delete local tag if exists
         run: |
